@@ -55,10 +55,13 @@ delta=$((-dtPow+dvPow))
 # absolute result of powers substraction
 deltaAbs=${delta/'-'}
 
+# calculate power multiplier
 pow=$((10**$((delta+scale))))
+# calculate raw string with result
 res=$((10#$dtInt*pow/10#$dvInt))
 resLen=${#res}
 
+# add leading zeroes
 if [[ $resLen -le $scale ]]; then
 	res="$(printf '%*s' $(($scale-$resLen+1)) | tr ' ' 0)"$res
        	resLen=${#res}	
