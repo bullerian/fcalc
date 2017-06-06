@@ -1,51 +1,74 @@
-nputString=$1
+#! /bin/bash 
+
+inputEqv=$1
 inputScale=$2
 mantisSepr="."
-readonly zero=0
 
-if [[ ${#inputString} -lt 3 ]]; then
-	echo "Specify equation string in form \"A / B\"" >&2;
+if [[ ${#inputEqv} -lt 3 ]]; then
+	echo -e "Specify equation string in form \"A/B\"\nSeparate whole and \
+fractional part witn '$mantisSepr'" >&2;
 	exit 1
 fi
 
-divident=${inputString%% *}
-divisor=${inputString##* }
+dt=${inputEqv%%/*}
+dv=${inputEqv##*/}
 scale=${inputScale:=2}
-dvtNum=0
-dvrNum=0
 
-if [[ $dividend == $divisor ]]; then
+# remove mantiss separator
+dvInt=${dv/$mantisSepr}
+dtInt=${dt/$mantisSepr}
+
+# divident and divisor are equal. Result = 1
+if [[ "$dt" == "$dv" ]]; then
 	echo "1"
 	exit 0
-elif [ ${divisor/$mantisSepr} -eq $zero ]; then
-	echo "Division by zero is forbidden!" >&2
-	exit 2
-elif [ ${divident/$mantisSepr} -eq $zero ]; then
+
+# in case of division by zero
+elif [[ $dvInt -eq 0 ]]; then
+	echo "Division by zero is undeffined!" >&2
+	exit 1
+
+# if divident=0 then result is 0
+elif [ $dtInt -eq 0 ]; then
 	echo "0"
 	exit 0
 fi
 
-tmp=${divident/@(#*.)}
-dvtNum=${#tmp}
-divident=${divident/./''}
+# return number of digits after separator
+function digAftrSepr(){
+	numString=$1
+	local fraction
+	if [[ "$numString" != *$mantisSepr* ]]; then 
+		echo 0
+	else
+	        fraction="${numString/#*.}"
+		echo ${#fraction}
+	fi
+}
 
-if [ $dvtNum -lt $scale ]; then
-	tmp=$(($scale - $dvtNum))
-	echo "Scale delta "$tmp
-	while [ $tmp -ne 0 ]; do
-		divident=${divident}0
-		((tmp--))
-	done
+# absolute power
+dvPow=$(digAftrSepr $dv)
+dtPow=$(digAftrSepr $dt)
 
+# in case of division powers substract
+delta=$((-dtPow+dvPow))
+# absolute result of powers substraction
+deltaAbs=${delta/'-'}
 
-	((dvtNum=scale))
+pow=$((10**$((delta+scale))))
+res=$((10#$dtInt*pow/10#$dvInt))
+resLen=${#res}
+
+if [[ $resLen -le $scale ]]; then
+	res="$(printf '%*s' $(($scale-$resLen+1)) | tr ' ' 0)"$res
+       	resLen=${#res}	
 fi
+	
+echo ${res:0:$((resLen-scale))}$mantisSepr${res:(-scale)}
 
-tmp=${divisor/#*.}
-dvrNum=${#tmp}
-divisor=${divisor/./''}
 
-echo $divident $divisor
 
-tmp=$(( $divident / $divisor ))
-tmp=${tmp:0:$scale}.${tmp:0:$scale}
+
+
+
+
